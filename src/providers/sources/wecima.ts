@@ -11,6 +11,11 @@ function extractQuality(url: string): string {
   return match ? match[1] : 'unknown';
 }
 
+// Function to format the title by replacing spaces with hyphens
+function formatTitle(title: string): string {
+  return title.split(' ').join('-');
+}
+
 function constructMovieUrl(title: string, releaseYear: number): string {
   return `https://wecima.show/watch/مشاهدة-فيلم-${title}-${releaseYear}/`;
 }
@@ -22,11 +27,17 @@ function constructSeriesUrl(title: string, season: number, episode: number): str
 // Function to scrape download links from a given URL
 async function scrapeDownloadLinks(
   url: string,
-  fetcher: (url: string) => Promise<{ data: string }>,
+  fetcher: (url: string) => Promise<{ data: string; statusCode: number; headers: any }>,
 ): Promise<string[]> {
   try {
-    // Fetch the page HTML
-    const { data } = await fetcher(url);
+    let currentUrl = url;
+    let response = await fetcher(currentUrl);
+    while (response.statusCode === 301 || response.statusCode === 302) {
+      currentUrl = response.headers.location;
+      response = await fetcher(currentUrl);
+    }
+
+    const { data } = response;
     const $ = cheerio.load(data);
 
     // Extract download links
@@ -53,9 +64,9 @@ async function comboScraper(ctx: ShowScrapeContext | MovieScrapeContext): Promis
 
   let url: string;
   if (ctx.media.type === 'movie') {
-    url = constructMovieUrl(ctx.media.title, ctx.media.releaseYear);
+    url = constructMovieUrl(formatTitle(ctx.media.title), ctx.media.releaseYear);
   } else {
-    url = constructSeriesUrl(ctx.media.title, ctx.media.season.number, ctx.media.episode.number);
+    url = constructSeriesUrl(formatTitle(ctx.media.title), ctx.media.season.number, ctx.media.episode.number);
   }
 
   try {
@@ -94,7 +105,7 @@ async function comboScraper(ctx: ShowScrapeContext | MovieScrapeContext): Promis
 export const wecimaScraper = makeSourcerer({
   id: 'wecima',
   name: 'Wecima',
-  rank: 210,
+  rank: 150,
   disabled: false,
   flags: [flags.CORS_ALLOWED],
   scrapeShow: comboScraper,
