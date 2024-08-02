@@ -11,11 +11,6 @@ function extractQuality(url: string): string {
   return match ? match[1] : 'unknown';
 }
 
-// Function to format the title by replacing spaces with hyphens
-function formatTitle(title: string): string {
-  return title.split(' ').join('-');
-}
-
 function constructMovieUrl(title: string, releaseYear: number): string {
   return `https://wecima.show/watch/مشاهدة-فيلم-${title}-${releaseYear}/`;
 }
@@ -23,18 +18,31 @@ function constructMovieUrl(title: string, releaseYear: number): string {
 function constructSeriesUrl(title: string, season: number, episode: number): string {
   return `https://wecima.show/watch/مشاهدة-مسلسل-${title}-موسم-${season}-حلقة-${episode}`;
 }
+// Function to format the title by replacing spaces with hyphens
+function formatTitle(title: string): string {
+  return title.split(' ').join('-');
+}
 
 // Function to scrape download links from a given URL
 async function scrapeDownloadLinks(
   url: string,
   fetcher: (url: string) => Promise<{ data: string; statusCode: number; headers: any }>,
 ): Promise<string[]> {
+  let currentUrl = url;
   try {
-    let currentUrl = url;
     let response = await fetcher(currentUrl);
+
+    // Follow redirects until we reach the final URL
     while (response.statusCode === 301 || response.statusCode === 302) {
+      if (!response.headers.location) {
+        throw new Error('No location header found during redirection');
+      }
       currentUrl = response.headers.location;
       response = await fetcher(currentUrl);
+    }
+
+    if (response.statusCode !== 200) {
+      throw new Error(`Failed to fetch the final URL, status code: ${response.statusCode}`);
     }
 
     const { data } = response;
@@ -105,7 +113,7 @@ async function comboScraper(ctx: ShowScrapeContext | MovieScrapeContext): Promis
 export const wecimaScraper = makeSourcerer({
   id: 'wecima',
   name: 'Wecima',
-  rank: 210,
+  rank: 150,
   disabled: false,
   flags: [flags.CORS_ALLOWED],
   scrapeShow: comboScraper,
