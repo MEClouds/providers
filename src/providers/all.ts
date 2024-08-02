@@ -22,6 +22,7 @@ import { remotestreamScraper } from '@/providers/sources/remotestream';
 import { showboxScraper } from '@/providers/sources/showbox/index';
 import { tugaflixScraper } from '@/providers/sources/tugaflix';
 import { vidsrcScraper } from '@/providers/sources/vidsrc/index';
+import { wecimaScraper } from '@/providers/sources/wecima';
 import { zoechipScraper } from '@/providers/sources/zoechip';
 
 import {
@@ -99,6 +100,7 @@ export function gatherAllSources(): Array<Sourcerer> {
     autoembedScraper,
     moviplusScraper,
     filmxyScraper,
+    wecimaScraper,
   ];
 }
 
